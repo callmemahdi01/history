@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>چک‌لیست شرح حال و معاینه</title>
+<style>
+:root{
+  --ink:#1c2b2a;
+  --paper:#f6f3ec;
+  --line:#c9c2b2;
+  --accent:#2f6f62;
+  --accent-soft:#e4ede9;
+  --done:#8a8578;
+}
+*{box-sizing:border-box;}
+body{
+  margin:0;
+  background:var(--paper);
+  color:var(--ink);
+  font-family:"Vazirmatn","Tahoma",sans-serif;
+  line-height:1.7;
+}
+header{
+  position:sticky;top:0;z-index:5;
+  background:var(--paper);
+  border-bottom:2px solid var(--ink);
+  padding:14px 20px;
+  display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;
+}
+header h1{font-size:18px;margin:0;}
+header .progress{font-size:13px;color:var(--done);}
+button.reset{
+  background:none;border:1px solid var(--line);border-radius:6px;
+  padding:6px 12px;font-size:12px;cursor:pointer;color:var(--ink);
+}
+main{max-width:760px;margin:0 auto;padding:16px 16px 60px;}
+.section{
+  border:1px solid var(--line);
+  border-radius:8px;
+  margin-bottom:10px;
+  overflow:hidden;
+  background:#fffdf9;
+}
+.section > summary{
+  list-style:none;cursor:pointer;
+  padding:12px 14px;
+  display:flex;justify-content:space-between;align-items:center;gap:10px;
+  font-weight:700;
+  border-right:4px solid var(--accent);
+  background:var(--accent-soft);
+}
+.section > summary::-webkit-details-marker{display:none;}
+.section > summary .count{font-size:12px;font-weight:400;color:var(--done);}
+.section .body{padding:10px 14px 14px;}
+.item{
+  display:flex;align-items:flex-start;gap:8px;
+  padding:7px 4px;
+  border-bottom:1px dashed var(--line);
+  font-size:14px;
+}
+.item:last-child{border-bottom:none;}
+.item input{margin-top:4px;accent-color:var(--accent);width:16px;height:16px;flex-shrink:0;}
+.item label{cursor:pointer;flex:1;}
+.item.checked label{color:var(--done);text-decoration:line-through;}
+.note{
+  font-size:12.5px;color:var(--done);
+  margin:2px 0 8px;
+}
+.badge{
+  display:inline-block;font-size:11px;background:var(--ink);color:var(--paper);
+  border-radius:4px;padding:1px 6px;margin-inline-start:6px;
+}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>چک‌لیست شرح حال و معاینه بدنی</h1>
+  <div style="display:flex;align-items:center;gap:10px;">
+    <span class="progress" id="progress"></span>
+    <button class="reset" onclick="resetAll()">پاک کردن تیک‌ها</button>
+  </div>
+</header>
+
+<main id="main"></main>
+
+<script>
+const data = [
+["اطلاعات بیمار", "شکایت اصلی (CC)، تاریخچه بیماری فعلی، سوابق", [
+  "شکایت اصلی (C.C) به زبان خود بیمار",
+  "شروع، مکان، مدت زمان (OLDCARTS)",
+  "کیفیت و شدت علامت",
+  "تکرار",
+  "فاکتور تشدیدکننده یا کاهنده",
+  "انتشار درد/علامت",
+  "زمان و شرایط بروز",
+]],
+["سابقه طبی قبلی (PMH)", "", [
+  "بیماری‌های کودکی (سرخک، اوریون، سیاه‌سرفه و ...)",
+  "دیابت، فشار خون بالا، بیماری قلبی",
+  "بیماری کلیوی، کبدی، تیروئید",
+  "آسم، بیماری تنفسی، سل",
+  "سرطان، هپاتیت، HIV",
+  "بیماری روماتولوژیک، تشنج، آنمی",
+  "سوابق جراحی: نوع عمل، زمان، مدت بستری، عوارض",
+]],
+["سابقه دارویی (DH)", "اسم، دوز، مقدار، مدت مصرف", [
+  "داروهای مصرفی فعلی (نام، دوز، تعداد)",
+  "رادیوتراپی/کموتراپی (مدت، تکرار، آخرین دوره)",
+  "داروی ضد بارداری",
+  "داروی بدون نسخه، ویتامین، مکمل گیاهی",
+  "قطره چشم، پماد",
+]],
+["حساسیت (AH)", "", [
+  "حساسیت دارویی",
+  "حساسیت غذایی",
+  "حساسیت به حشرات/حیوانات",
+  "حساسیت محیطی یا فصلی",
+]],
+["واکسیناسیون و غربالگری", "", [
+  "وضعیت واکسیناسیون (کزاز، هپاتیت B، آنفلونزا و ...)",
+  "PPD / تست توبرکولین",
+  "آزمایش خون مخفی در مدفوع",
+  "پاپ‌اسمیر / ماموگرافی / آزمایش پروستات",
+]],
+["سابقه خانوادگی (FH)", "", [
+  "بیماری قلبی-عروقی، فشار خون، دیابت در خانواده",
+  "سرطان (نوع خاص)",
+  "بیماری روانی یا خودکشی در خانواده",
+  "اعتیاد به الکل یا مواد مخدر در خانواده",
+]],
+["سابقه فردی و اجتماعی (PH)", "", [
+  "مصرف الکل",
+  "مصرف تنباکو یا مواد مخدر",
+  "مصرف قهوه/چای/کافئین",
+  "ورزش و رژیم غذایی",
+  "شغل و سابقه شغلی",
+  "سابقه مسافرت",
+  "تماس با حیوانات",
+  "گرایش و هویت جنسی / سابقه جنسی",
+]],
+["مرور سیستم‌ها (ROS)", "پرسش سریع هر سیستم", [
+  "عمومی و کلی: تغییر وزن اخیر، لباس‌های اخیرا تنگ یا گشاد، ضعف و خستگی، عرق شبانه، احساس لرز، تب، بی‌اشتهایی یا پرخوری",
+  "پوست: راش، توده‌ها، زخم، خارش، خشکی، تغییر رنگ، تغییرات مو یا ناخن، تغییر اندازه یا رنگ خال، حساسیت به نور، سیانوز",
+  "سر: سردرد، آسیب به سر، گیجی، سبکی سر",
+  "چشم: بینایی، عینک یا لنز تماسی، آخرین معاینه، درد، قرمزی، اشک‌ریزش بیش از حد، دید دوتایی یا محو (تاری)، لکه‌ها، فلاش، گلوکوم، کاتاراکت، ترشح، لکه بینی، حرکات دردناک چشم، احساس اجسام خارجی",
+  "گوش: شنوایی، وزوز گوش، سرگیجه، درد گوش، عفونت، ترشح، سمعک، خارش، پارگی",
+  "بینی و سینوزیت: سرماخوردگی مکرر، خشکی، ترشح، خارش، آبریزش بینی، خونریزی بینی (اپیستاکسی)، مشکل سینوس (پری در صورت)، گرفتگی بینی، پاراستزی صورت",
+  "گلو (یا دهان و حلق): شرایط دهان و لثه، خونریزی لثه، مناسب بودن دندان مصنوعی، آخرین معاینه دندان، درد زبان، دهان خشک، گلودرد مکرر، خشونت صدا، تجمع آب/خرخر کردن، تلخی دهان، ترشحات پشت حلق، پوسیدگی دندان، درد و زخم زبان، آفت دهان، تبخال",
+  "گردن: توده‌ها، غدد متورم، گواتر، درد، خشکی و سفتی گردن",
+  "پستان‌ها: توده‌ها، درد، ناراحتی، ترشح از نوک پستان، موهای زائد",
+  "تنفس: سرفه، خلط (رنگ، کمیت)، هموپتزی، تنگی نفس، ویزینگ، پلورزی (التهاب لایه نازک)، آخرین عکس قفسه سینه، خس‌خس، آسم، برونشیت، آمفیزم، پنومونی، توبرکلوز",
+  "قلبی عروقی: مشکل قلبی، فشار خون، تب روماتیسمی، سوفل‌های قلبی، درد یا ناراحتی قفسه سینه، تپش قلب، تنگی نفس، ارتوپنه، تنگی نفس متناقض شبانه (PND)، ادم، نتایج آزمایشات قبلی",
+  "معدی-روده‌ای (گوارش): اشکال در بلع (دیسفاژی)، درد هنگام بلع (ادینوفاژی)، سوزش سر دل، اشتها، تهوع، استفراغ، حرکات روده، رنگ ادرار، برگشت غذا (رگورژیتاسیون)، تغییر در حرکات روده، خونریزی از مقعد، مدفوع سیاه یا قیری، هموروئید، یبوست، اسهال، درد شکم، عدم تحمل غذا، آروغ بیش از حد یا عبور گاز روده‌ای، زردی، مشکل کبد یا کیسه صفرا، هپاتیت، عدم هضم غذا (Maldigestion)",
+  "ادراری: تکرر ادرار، پلی‌اوری، ناکچوری، احساس فوریت، سوزش یا درد ادرار، هماچوری، عفونت ادراری، سنگ کلیه، بی‌اختیاری، در مردان کاهش قطر یا نیروی جریان، قطره‌قطره ادرار، تغییر رنگ ادرار، تاخیر در شروع ادرار",
+  "تناسلی مرد: فتق، ترشح یا زخم آلت تناسلی، درد یا توده در بیضه، STI، HIV، عملکرد جنسی",
+  "تناسلی زن: سن اولین قاعدگی (منارک)، قاعدگی منظم، تکرر و طول مدت، ترشح، خارش، میزان خونریزی، خونریزی بین قاعدگی یا پس از نزدیکی، آخرین دوره قاعدگی (LMP)، دیسمنوره، بحران قبل از قاعدگی، درد، توده، STI، تعداد بارداری‌ها، تعداد زایمان‌ها، تعداد سقط‌ها (خودبه‌خود و القایی)، مشکلات زمان حاملگی، عوارض بارداری، روش تنظیم خانواده، علاقه جنسی، عملکرد و رضایت، مشکلات (شامل دیسپارونی)، سن یائسگی، نشانه‌های یائسگی، خونریزی بعد از یائسگی",
+  "عروق محیطی: لنگش متناوب، کرامپ‌های ساق، ورید‌های واریسی، سابقه لخته در وریدها، تورم ساق یا پاها یا مچ پا، تغییر رنگ نوک انگشتان در فصل سرد، تورم با قرمزی همراه با درد، تندرنس",
+  "روانی: عصبانیت، فشار روحی، خلق، افسردگی، تغییرات حافظه، تلاش خودکشی، اضطراب، اختلال خواب",
+  "هماتولوژیک (خون): آنمی، کبودی، خونریزی آسان، واکنش به تزریقات، خونریزی زیرپوستی (پتشی، اکیموز)، گروه خونی",
+  "اسکلتی عضلانی: درد عضله یا مفصل، خستگی، آرتریت، نقرس، درد کمر (با توضیحات)، تورم، قرمزی، تندرنس، خشکی یا محدودیت حرکت، زمان بروز علائم، سابقه ضربه، درد مفصل با مشخصه سیستمیک مانند تب/لرز/راش، آنورکسی، کاهش وزن یا ضعف، فاسیکولاسیون، خشکی صبحگاهی، ترمور، آتروفی ژنرالیزه",
+  "نورولوژی: اختلالات بینایی، تغییرات در خلق/توجه/گفتار، تغییر در تمرکز، حافظه، بینش یا قضاوت، سردرد، سبکی سر، سرگیجه، غش کردن، خاموشی، تشنج، ضعف، فلج، خواب‌رفتگی یا از دست دادن حس یا کرختی، مورمور شدن، احساس سوزسوز کردن، لرزش در حرکات غیرارادی یا ترمور، تغییرات در فهم زمان و مکان",
+  "اندوکرین: مشکل تیروئید، عدم تحمل به گرما یا سرما، تعریق بیش از حد، گرسنگی یا تشنگی بیش از حد، پلی‌اوری، تغییر در اندازه دستکش یا کفش (ادم)",
+]],
+["معاینه عمومی و علائم حیاتی", "", [
+  "وضعیت عمومی و هوشیاری (orientation)",
+  "PR / BP / T / RR / O2Sat",
+  "قد، وزن، BMI",
+]],
+["معاینه سر تا گردن", "", [
+  "پوست، مو، ناخن",
+  "سر و جمجمه",
+  "چشم‌ها (مردمک، حرکات، ته چشم)",
+  "گوش‌ها (اتوسکوپ)",
+  "بینی و سینوس‌ها",
+  "دهان و حلق",
+  "گردن (تیروئید، غدد لنفاوی، JVP)",
+]],
+["معاینه قفسه سینه و قلب", "", [
+  "پشت و ریه (نگاه، لمس، دق، سمع)",
+  "پستان‌ها و آگزیلا",
+  "قلب (سمع S1/S2، سوفل، PMI، نبض کاروتید)",
+]],
+["معاینه شکم و اندام‌ها", "", [
+  "شکم (نگاه، سمع، دق، لمس)",
+  "سیستم عروقی محیطی (نبض، ادم، واریس)",
+  "اسکلتی‌عضلانی (مفاصل، قدرت عضلانی)",
+]],
+["معاینه عصبی", "", [
+  "وضعیت ذهنی و حافظه",
+  "اعصاب کرانیال (I تا XII)",
+  "معاینه حرکتی (تون، قدرت)",
+  "معاینه حسی",
+  "رفلکس‌ها",
+  "هماهنگی و راه رفتن (رومبرگ، GAIT)",
+]],
+["معاینات مکمل", "", [
+  "معاینه مقعد/رکتال",
+  "معاینه ژنیتال/اینگوئینال",
+]],
+["جمع‌بندی پرونده", "", [
+  "ثبت نتایج آزمایش/رادیولوژی/نوار قلب",
+  "Summary statement",
+  "Problem list",
+  "تشخیص‌های افتراقی (DDx)",
+  "تشخیص اولیه (Primary Dx)",
+  "Assessment and Plan",
+]],
+];
+
+const main = document.getElementById("main");
+let idCounter = 0;
+
+data.forEach(([title, note, items], si) => {
+  const section = document.createElement("details");
+  section.className = "section";
+  section.open = si === 0;
+
+  const summary = document.createElement("summary");
+  summary.innerHTML = `<span>${title}</span><span class="count" data-section="${si}"></span>`;
+  section.appendChild(summary);
+
+  const body = document.createElement("div");
+  body.className = "body";
+  if (note) {
+    const n = document.createElement("div");
+    n.className = "note";
+    n.textContent = note;
+    body.appendChild(n);
+  }
+
+  items.forEach(text => {
+    const id = "chk" + (idCounter++);
+    const row = document.createElement("div");
+    row.className = "item";
+    row.innerHTML = `<input type="checkbox" id="${id}"><label for="${id}">${text}</label>`;
+    body.appendChild(row);
+  });
+
+  section.appendChild(body);
+  main.appendChild(section);
+});
+
+function loadState(){
+  try{ return JSON.parse(localStorage.getItem("hx-checklist")||"{}"); }catch(e){ return {}; }
+}
+function saveState(state){
+  localStorage.setItem("hx-checklist", JSON.stringify(state));
+}
+
+function applyState(){
+  const state = loadState();
+  document.querySelectorAll('input[type=checkbox]').forEach(cb=>{
+    cb.checked = !!state[cb.id];
+    cb.parentElement.classList.toggle("checked", cb.checked);
+  });
+  updateCounts();
+}
+
+function updateCounts(){
+  let totalChecked = 0, totalAll = 0;
+  document.querySelectorAll(".section").forEach((section, si)=>{
+    const boxes = section.querySelectorAll('input[type=checkbox]');
+    const checked = [...boxes].filter(b=>b.checked).length;
+    totalChecked += checked; totalAll += boxes.length;
+    const countEl = section.querySelector(`.count[data-section="${si}"]`);
+    if(countEl) countEl.textContent = `${checked}/${boxes.length}`;
+  });
+  document.getElementById("progress").textContent = `${totalChecked} از ${totalAll} مورد`;
+}
+
+document.addEventListener("change", e=>{
+  if(e.target.matches('input[type=checkbox]')){
+    e.target.parentElement.classList.toggle("checked", e.target.checked);
+    const state = loadState();
+    state[e.target.id] = e.target.checked;
+    saveState(state);
+    updateCounts();
+  }
+});
+
+function resetAll(){
+  localStorage.removeItem("hx-checklist");
+  applyState();
+}
+
+applyState();
+</script>
+</body>
+</html>
